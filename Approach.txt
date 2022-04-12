@@ -1,0 +1,108 @@
+#    My  Approach to solve this problem
+
+********************************************************************************-------------------------**************************************************************
+
+### Note:- I have explained my souce code line by line in "source code.py" file
+
+********************************************************************************-------------------------**************************************************************
+
+Modules used
+-> I used pandas for loading ,manupulating and writing data
+-> I used numpy for numeric calculations
+-> sklearn for training and predicting 
+-> Pickle for storing model
+
+********************************************************************************-------------------------**************************************************************
+
+#  Feature engineering for data
+
+first I dropped all the columns that doesn't give any information
+ They are:-
+	1)product_id
+	2)market_category
+	3)charges_2 %
+	4)Instock_date
+	5)Stall_no
+	6)Customer_name
+	7)Loyality_customer
+Demand contibutes a bit so i included it.
+
+
+
+#Funtions used are :
+
+1)def find(arr,n):
+    k=np.where(arr==n)[0]
+    if(k.size==0):          [ it is funtion used find the correct index of a particular category of respective dummies  ex:- arr=[3,4,5],n=4 then function returns 1 ]
+        return -1
+    return k[0]
+
+2)def mapping_charges(df):
+    df_out = pd.DataFrame()
+    dic=dict()
+    for key, subdf in df.groupby('Product_Category'):
+        upper_lim = subdf['Maximum_price'].quantile(.99)
+        lower_lim = subdf['Minimum_price'].quantile(.01)
+        subd = subdf.copy()
+        subd = subd[(subd['Maximum_price'] < upper_lim)&(subd['Minimum_price'] > lower_lim)]  [function for removing outliers and mapping charges_1 medians to respective product_category]
+        upper_lim = subdf['avg_price'].quantile(.99)
+        lower_lim = subdf['avg_price'].quantile(.02)
+        subd = subd[(subd['avg_price'] < upper_lim)&(subd['avg_price'] > lower_lim)]
+        m = np.median(subd.charges_1)
+        subd.charges_1=subd.charges_1.replace(to_replace=0,value=m)
+        dic[key]=m
+        reduced_df = subd
+        df_out = pd.concat([df_out,reduced_df],ignore_index=True)
+    return (df_out,dic)    
+ 
+
+
+
+I filled the null_values of charges_1 with 0 and later i filled them with median of respective product category 
+
+Then, I dropped null value rows and negative selling price rows as they aren't useful.
+
+I used Minimun_price and maximun_price to create new column average price and i dropped them.
+and I Normalized the average column 
+
+Getting dummies or One Hot Encoding
+I used get_dummies funtion for Product_category and Demand.And, i concatenated thosedummies with my dataframe.
+Then, I dropped Product_category and Demand from dataframe
+
+#removing outliers
+
+1)selling price should not be greater than maximum price usually but it happens some times it can't increaced by 50 percent i picked 1.45*Max_price(at max) manually
+2)I removed the outliers when discount is 0 and max_price is almost doubled
+3)minimun price should not be greater than selling price when discount is given
+4)removed the outliers where max_price/min_price>8 picked manually by observing data
+
+
+********************************************************************************-------------------------**************************************************************
+
+
+##Training data
+I used XGBRegressor it gave the highest accuracy actually i tried for different algos for different parameters but, it is useful so, i just mentioned it
+i trained data and stored model using pickle library
+
+this model contains 114 columns :-
+	column 1 :- Grade
+	column 2 :- Discount_avail
+	column 3 :- charges_1
+	column 4 :- Average Price
+	column (5 to 14) :- array of zeroes and replacing the respective product_category position by 1  (mentioned in soure code 													
+	column (15 to 114) :- array of zeroes and replacing the respective Demand type position by 1			about how the columns are arranged)
+	
+
+Now, predicting data
+feature scaling is done same as training data and i explained it in source code too in comments
+
+filled null values accordingly as train data and using dictionary as i mentioned above in function2
+
+and, i stored data the result for test data in csv file using pandas .
+
+###Note:- 
+	1)I stored my model using pickle library in binary format. 
+	2)we can also find the results of rest 50% test data by providing path in source code for train data and test data to load
+
+
+********************************************************************************-------THANKING YOU------**************************************************************
